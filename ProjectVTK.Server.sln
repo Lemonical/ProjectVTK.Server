@@ -7,6 +7,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProjectVTK.Server.Console",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProjectVTK.Server.GUI", "src\ProjectVTK.Server.GUI\ProjectVTK.Server.GUI.csproj", "{74D6A356-71BB-47A0-8D5C-2358CAD997B1}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "libs", "libs", "{E1B4F924-BDDB-4002-B23F-D5D3EB50314D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProjectVTK.Shared", "libs\shared\src\ProjectVTK.Shared.csproj", "{23903FAE-8D01-4EF2-8353-E37889F91ACA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProjectVTK.Server.Core", "libs\core\ProjectVTK.Server.Core\ProjectVTK.Server.Core.csproj", "{E164C891-C156-4F46-B6DA-2CAF2169910A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,8 +27,20 @@ Global
 		{74D6A356-71BB-47A0-8D5C-2358CAD997B1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{74D6A356-71BB-47A0-8D5C-2358CAD997B1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{74D6A356-71BB-47A0-8D5C-2358CAD997B1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{23903FAE-8D01-4EF2-8353-E37889F91ACA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{23903FAE-8D01-4EF2-8353-E37889F91ACA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{23903FAE-8D01-4EF2-8353-E37889F91ACA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{23903FAE-8D01-4EF2-8353-E37889F91ACA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E164C891-C156-4F46-B6DA-2CAF2169910A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E164C891-C156-4F46-B6DA-2CAF2169910A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E164C891-C156-4F46-B6DA-2CAF2169910A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E164C891-C156-4F46-B6DA-2CAF2169910A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{23903FAE-8D01-4EF2-8353-E37889F91ACA} = {E1B4F924-BDDB-4002-B23F-D5D3EB50314D}
+		{E164C891-C156-4F46-B6DA-2CAF2169910A} = {E1B4F924-BDDB-4002-B23F-D5D3EB50314D}
 	EndGlobalSection
 EndGlobal

@@ -1,11 +1,3 @@
-[submodule "ProjectVTK.Shared"]
-	path = ProjectVTK.Shared
-	url = https://github.com/Lemonical/ProjectVTK.Shared.git
-	branch = dev
-[submodule "libs/ProjectVTK.Shared"]
-	path = libs/ProjectVTK.Shared
-	url = https://github.com/Lemonical/ProjectVTK.Shared.git
-	branch = dev
 [submodule "libs/shared"]
 	path = libs/shared
 	url = https://github.com/Lemonical/ProjectVTK.Shared.git

@@ -1,6 +1,8 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using ProjectVTK.Server.Core.Services;
+using ProjectVTK.Shared.Commands;
 
 Host.CreateDefaultBuilder(args)
     .ConfigureLogging(logging =>
@@ -8,11 +10,18 @@ Host.CreateDefaultBuilder(args)
         logging.AddConsole();
 #if DEBUG
         logging.AddDebug();
-#endif
+        logging.SetMinimumLevel(LogLevel.Debug);
+#else
         logging.SetMinimumLevel(LogLevel.Information);
+#endif
     })
     .ConfigureServices((hostContext, services) =>
     {
-        // Add services here
+        services.AddSingleton<CommandHandlerFactory>();
+        services.AddSingleton<ConfigService>();
+        services.AddSingleton<ClientService>();
+        services.AddSingleton<ServerService>();
+
+        services.AddHostedService<ServerBackgroundService>();
     })
     .Build().Run();
