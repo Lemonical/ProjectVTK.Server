@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using ProjectVTK.Server.CLI.Services;
 using ProjectVTK.Server.Core.Services;
 using ProjectVTK.Shared.Commands;
 

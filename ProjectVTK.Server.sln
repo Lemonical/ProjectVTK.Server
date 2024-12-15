@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.12.35514.174
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProjectVTK.Server.Console", "src\ProjectVTK.Server.Console\ProjectVTK.Server.Console.csproj", "{D2DFAAB5-417E-4E18-BB44-16872887980B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProjectVTK.Server.CLI", "src\ProjectVTK.Server.CLI\ProjectVTK.Server.CLI.csproj", "{D2DFAAB5-417E-4E18-BB44-16872887980B}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProjectVTK.Server.GUI", "src\ProjectVTK.Server.GUI\ProjectVTK.Server.GUI.csproj", "{74D6A356-71BB-47A0-8D5C-2358CAD997B1}"
 EndProject
