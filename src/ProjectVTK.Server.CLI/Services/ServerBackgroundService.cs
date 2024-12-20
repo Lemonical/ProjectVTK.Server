@@ -3,9 +3,9 @@ using ProjectVTK.Server.Core.Services;
 
 namespace ProjectVTK.Server.CLI.Services;
 
-public class ServerBackgroundService(ClientService clientService, ServerService serverService) : BackgroundService
+public class ServerBackgroundService(ServerSessions clientService, ServerService serverService) : BackgroundService
 {
-    private readonly ClientService _clientService = clientService;
+    private readonly ServerSessions _clientService = clientService;
     private readonly ServerService _serverService = serverService;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -82,7 +82,7 @@ public class ServerBackgroundService(ClientService clientService, ServerService 
 
     private void ShowConnectedClients()
     {
-        var users = _clientService.GetClients();
+        var users = _clientService.GetSessions();
         if (users.Count == 0)
         {
             Console.WriteLine("No users are currently online.");
@@ -96,7 +96,7 @@ public class ServerBackgroundService(ClientService clientService, ServerService 
 
     private void DisconnectClient(Guid userId)
     {
-        var client = _clientService.GetClient(x => x.Id == userId);
+        var client = _clientService.GetSession(x => x.Id == userId);
         if (client != null)
             client.Socket.Close();
         else
