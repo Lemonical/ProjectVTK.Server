@@ -27,7 +27,10 @@ public class ServerSessions
     }
 
     public void Clear()
-        => _sessions.Clear();
+    {
+        _sessions.ForEach(x => x.Close());
+        _sessions.Clear();
+    }
 
     public WebSocketSession? GetSession(IWebSocketConnection socket)
         => _sessions.FirstOrDefault(x => x.Socket == socket);

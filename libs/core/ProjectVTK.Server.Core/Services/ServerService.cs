@@ -4,48 +4,39 @@ using ProjectVTK.Server.Core.Models;
 using ProjectVTK.Shared.Commands;
 using ProjectVTK.Shared.Commands.Data;
 using ProjectVTK.Shared.Helpers;
+using System.Net;
 using System.Text.Json;
 using Websocket.Client;
 
 namespace ProjectVTK.Server.Core.Services;
 
-public class ServerService
+public class ServerService(CommandHandlerFactory handlerFactory, CommandService commands, ServerSessions sessions, ILogger<ServerService> logger)
 {
     public bool IsCompatibleVersion { get; private set; }
+    public bool IsConnected { get; private set; }
+    public bool IsLoggedIn { get; private set; }
+    public bool IsHosting { get; private set; }
     public const float Version = 1f;
 
-    private readonly ConfigService _configService;
-    private readonly CommandHandlerFactory _handlerFactory;
-    private readonly ServerSessions _sessions;
-    private readonly CommandService _commands;
-    private readonly ILogger<ServerService> _logger;
+    private readonly CommandHandlerFactory _handlerFactory = handlerFactory;
+    private readonly ServerSessions _sessions = sessions;
+    private readonly CommandService _commands = commands;
+    private readonly ILogger<ServerService> _logger = logger;
+
     private WebSocketServer? _server;
     private WebsocketClient? _client;
+    private NetworkCredential? _credentials;
 
     // TODO: Change to actual IP
     private const string _masterUrl = "ws://127.0.0.1:6565";
     private bool _hasWarnedDisconnection;
 
-    public ServerService(CommandHandlerFactory handlerFactory, CommandService commands, ConfigService configService, ServerSessions clientService, ILogger<ServerService> logger)
+    public void Start(int port, CancellationToken cancellationToken)
     {
-        _handlerFactory = handlerFactory;
-        _commands = commands;
-        _configService = configService;
-        _sessions = clientService;
-        _logger = logger;
+        if (port is < 1 or > 65535)
+            throw new ArgumentOutOfRangeException(nameof(port), "Port must be between 1 and 65535.");
 
-        ConnectToMaster();
-    }
-
-    public void Start(CancellationToken cancellationToken)
-    {
-        var configs = _configService.Server;
-        if (configs == null) return;
-
-        _server = new WebSocketServer($"ws://0.0.0.0:{configs.Network.Port}");
-
-        _logger.LogInformation("Config file loaded with name: {name}, port: {port}, max users: {maxUsers}",
-            configs.Metadata.Name, configs.Network.Port, configs.Network.MaxUsers);
+        _server = new WebSocketServer($"ws://0.0.0.0:{port}");
 
         _server.Start(socket =>
         {
@@ -94,18 +85,20 @@ public class ServerService
             };
         });
 
+        IsHosting = true;
         cancellationToken.WaitHandle.WaitOne();
         Stop();
     }
 
     public void Stop()
     {
+        IsHosting = false;
         _server?.Dispose();
         _client?.Dispose();
         _logger.LogInformation("Server stopped");
     }
 
-    private void ConnectToMaster()
+    public void ConnectToMaster()
     {
         var exitEvent = new ManualResetEvent(false);
         _logger.LogInformation("Connecting to master server");
@@ -121,24 +114,30 @@ public class ServerService
         {
             if (_hasWarnedDisconnection) return;
 
+            IsLoggedIn = IsConnected = IsCompatibleVersion = false;
             _hasWarnedDisconnection = true;
             _logger.LogWarning("Disconnected from master server");
         });
         _client.ReconnectionHappened.Subscribe(async _ =>
         {
+            IsConnected = true;
             _hasWarnedDisconnection = false;
             _logger.LogInformation("Connected to master server");
             var vcResponse = await _commands.SendCommandAsync(_client,
                 Command.CreateRequest(
                     new VersionCheckCommandData()
-                    { Type = ClientType.Client, Version = Version }
+                    { Type = ClientType.Server, Version = Version }
                 ));
 
             IsCompatibleVersion = vcResponse.Status == CommandStatusCode.Success;
             if (!IsCompatibleVersion)
                 _logger.LogError("Running version {version}, but it is not compatible!", Version);
             else
+            {
                 _logger.LogInformation("{message}", ((VersionCheckCommandData)vcResponse.Data!).Message);
+                if (_credentials != null)
+                    await LoginAccountAsync(_credentials.UserName, _credentials.Password);
+            }
         });
         _client.MessageReceived.Subscribe(async payload =>
         {
@@ -167,5 +166,78 @@ public class ServerService
         });
         _client.Start();
         exitEvent.WaitOne();
+    }
+
+    public async Task<Command?> LoginAccountAsync(string username, string password)
+    {
+        if (!IsConnected || !IsCompatibleVersion) return null;
+
+        if (_credentials == null)
+        {
+            password = StringHelper.Hash(password);
+            //var secureString = new SecureString();
+            //foreach (var pass in hashedPassword)
+            //    secureString.AppendChar(pass);
+            _credentials = new(username, password);
+        }
+
+        var response = await _commands.SendCommandAsync(_client!,
+            Command.CreateRequest(
+                new LoginCommandData()
+                { Username = username, Password = password }
+            ));
+        if (response.Status == CommandStatusCode.Success)
+            IsLoggedIn = true;
+
+        return response;
+    }
+
+    public async Task<Command?> CreateAccountAsync(string username, string password)
+    {
+        if (!IsConnected || !IsCompatibleVersion) return null;
+
+        var response = await _commands.SendCommandAsync(_client!,
+            Command.CreateRequest(
+                new CreateAccountCommandData()
+                { Username = username, Password = StringHelper.Hash(password) }
+            ));
+
+        return response;
+    }
+
+    public async Task<Command?> PublicizeServerAsync(string name, int port, ushort userCount, ushort maxUserCount)
+    {
+        if (!IsConnected || !IsCompatibleVersion || !IsLoggedIn) return null;
+
+        var response = await _commands.SendCommandAsync(_client!,
+            Command.CreateRequest(
+                new PublicizeServerCommandData()
+                { 
+                    Name = name,
+                    Port = port,
+                    UserCount = userCount,
+                    MaxUserCount = maxUserCount
+                }
+            ));
+
+        return response;
+    }
+
+    public async Task<Command?> UpdateServerAsync(string name, ushort userCount, ushort maxUserCount, bool isPublic)
+    {
+        if (!IsConnected || !IsCompatibleVersion || !IsLoggedIn) return null;
+
+        var response = await _commands.SendCommandAsync(_client!,
+            Command.CreateRequest(
+                new UpdateServerCommandData()
+                {
+                    Name = name,
+                    ListServer = isPublic,
+                    UserCount = userCount,
+                    MaxUserCount = maxUserCount
+                }
+            ));
+
+        return response;
     }
 }
