@@ -42,8 +42,17 @@ public class ServerBackgroundService(ServerSessions sessions, ServerService serv
 
                 if (_serverStarted && serverTask == null)
                 {
-                    Console.Title = _configService.Server.Metadata.Name;
+                    using var httpClient = new HttpClient();
+                    var publicIp = (await httpClient.GetStringAsync("http://icanhazip.com", stoppingToken))
+                        .Replace("\\r\\n", "").Replace("\\n", "").Trim();
+
+                    Console.Title = string.Concat(
+                        $"[{(_configService.Server.Network.IsPublic ? "Public" : "Private")}] ",
+                        _configService.Server.Metadata.Name,
+                        "@", _configService.Server.Network.Port);
                     serverTask = Task.Run(() => _serverService.Start(_configService.Server.Network.Port, stoppingToken), stoppingToken);
+                    _logger.LogInformation("Hosting {name} @ ws://{publicIp}:{port} with {maxUsers} max users",
+                        _configService.Server.Metadata.Name, publicIp, _configService.Server.Network.Port, _configService.Server.Network.MaxUsers);
                 }
             }
             await Task.Delay(25, stoppingToken);
@@ -235,9 +244,9 @@ public class ServerBackgroundService(ServerSessions sessions, ServerService serv
 
         int usernameColPad = 16,
             areaColPad = Math.Max(areaHead.Length, users
-                .Where(x => x.Area != null).Max(x => x.Area!.Name.Length)),
+                .MaxBy(x => x.Area?.Name.Length)?.Area?.Name.Length ?? 0),
             characterColPad = Math.Max(characterHead.Length, users
-                .Where(x => x.Character != null).Max(x => x.Character!.FolderName.Length)),
+                .MaxBy(x => x.Character?.FolderName.Length)?.Character?.FolderName.Length ?? 0),
             guidColPad = 36,
             ipAddressColPad = 15;
 
@@ -264,6 +273,7 @@ public class ServerBackgroundService(ServerSessions sessions, ServerService serv
             "-".PadRight(guidColPad + 2, '-'));
 
         PrintToConsole(onlineUsersFormatted, ConsoleColor.Green);
+        PrintToConsole(rowSeparator.Replace('|', '-'), ConsoleColor.Green);
         PrintToConsole(headers, ConsoleColor.Green);
         PrintToConsole(rowSeparator, ConsoleColor.Green);
         foreach (var user in users)

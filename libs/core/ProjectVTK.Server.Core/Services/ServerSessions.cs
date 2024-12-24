@@ -4,12 +4,29 @@ using System.Collections.Immutable;
 
 namespace ProjectVTK.Server.Core.Services;
 
-public class ServerSessions
+public class ServerSessions(ConfigService configService)
 {
+    private readonly ConfigService _configService = configService;
     private readonly List<WebSocketSession> _sessions = [];
 
-    public void AddSession(WebSocketSession session)
-        => _sessions.Add(session);
+    /// <summary>
+    /// Try to add a session to the server.
+    /// </summary>
+    /// <param name="session">The WebSocketSession.</param>
+    /// <returns>true if session was added successfully, otherwise false.</returns>
+    public bool TryAddSession(WebSocketSession session)
+    {
+        if (_configService.Server == null)
+            return false;
+
+        if (_configService.Server.Network.MaxUsers > _sessions.Count)
+        {
+            _sessions.Add(session);
+            return true;
+        }
+
+        return false;
+    }
 
     public WebSocketSession? RemoveSession(IWebSocketConnection socket)
     {
@@ -20,10 +37,11 @@ public class ServerSessions
         return session;
     }
 
-    public void UpdateSession(WebSocketSession oldSession, WebSocketSession newSession)
+    public void ModifySession(Func<WebSocketSession, bool> predicate, Action<WebSocketSession> updateAction)
     {
-        var index = _sessions.IndexOf(oldSession);
-        _sessions[index] = newSession;
+        var session = _sessions.FirstOrDefault(predicate);
+        if (session != null)
+            updateAction(session);
     }
 
     public void Clear()

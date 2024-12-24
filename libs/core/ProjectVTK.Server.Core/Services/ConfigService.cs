@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using ProjectVTK.Server.Core.Models;
 using ProjectVTK.Shared.Helpers;
+using ProjectVTK.Shared.Models.Interfaces;
 using System.Text.Json;
 
 namespace ProjectVTK.Server.Core.Services;
@@ -12,8 +13,19 @@ public class ConfigService
     public ServerConfigs? Server { get; private set; }
     public BanList? Bans { get; private set; }
 
+    private List<ICharacter> _characters = [];
+    private List<IMusic> _music = [];
+    private List<IArea> _areas = [];
+    public IReadOnlyCollection<ICharacter> Characters => _characters;
+    public IReadOnlyCollection<IMusic> Music => _music;
+    public IReadOnlyCollection<IArea> Areas => _areas;
+
     private readonly string _serverConfigPath = Path.Combine(AppContext.BaseDirectory, "data", "configs.json");
     private readonly string _banListPath = Path.Combine(AppContext.BaseDirectory, "data", "bans.json");
+
+    private string CharactersPath => Path.Combine(AppContext.BaseDirectory, "data", "scenes", Server?.Metadata.Scene ?? "Default", "characters.json");
+    private string MusicPath => Path.Combine(AppContext.BaseDirectory, "data", "scenes", Server?.Metadata.Scene ?? "Default", "music.json");
+    private string AreasPath => Path.Combine(AppContext.BaseDirectory, "data", "scenes", Server?.Metadata.Scene ?? "Default", "areas.json");
 
     public ConfigService(ILogger<ConfigService> logger)
     {
@@ -25,6 +37,10 @@ public class ConfigService
     {
         Server = LoadConfig<ServerConfigs>(_serverConfigPath) ?? new ServerConfigs();
         Bans = LoadConfig<BanList>(_banListPath) ?? new BanList();
+
+        _characters = LoadConfig<List<ICharacter>>(CharactersPath) ?? [];
+        _music = LoadConfig<List<IMusic>>(MusicPath) ?? [];
+        _areas = LoadConfig<List<IArea>>(AreasPath) ?? [];
     }
 
     private T? LoadConfig<T>(string path) where T : class, new()
@@ -49,6 +65,9 @@ public class ConfigService
         {
             ServerConfigs => _serverConfigPath,
             BanList => _banListPath,
+            IEnumerable<ICharacter> => CharactersPath,
+            IEnumerable<IMusic> => MusicPath,
+            IEnumerable<IArea> => AreasPath,
             _ => throw new ArgumentException("Invalid config type", nameof(configs))
         };
 
@@ -59,74 +78,79 @@ public class ConfigService
     public bool AddBannedUsernames(params string[] usernames)
     {
         Bans ??= new BanList();
-        var bans = Bans.Usernames;
-        var hasSuccess = false;
-        foreach (var username in usernames)
+        var array = Bans.IpAddresses;
+        var hasSuccess = ModifyBanList(ref array, usernames, true);
+        if (hasSuccess)
         {
-            if (bans.FirstOrDefault(b => b.Equals(username, StringComparison.OrdinalIgnoreCase)) is not null)
-                continue;
-            // Add username to the end of the array
-            bans = [.. bans, username];
-            hasSuccess = true;
+            Bans.IpAddresses = array;
+            Save(Bans);
         }
-        Save(Bans);
-        Bans.Usernames = bans;
         return hasSuccess;
     }
 
     public bool AddBannedIpAddresses(params string[] ipAddresses)
     {
         Bans ??= new BanList();
-        var bans = Bans.IpAddresses;
-        var hasSuccess = false;
-        foreach (var ip in ipAddresses)
+        var array = Bans.IpAddresses;
+        var hasSuccess = ModifyBanList(ref array, ipAddresses, true);
+        if (hasSuccess)
         {
-            if (bans.FirstOrDefault(b => b.Equals(ip, StringComparison.OrdinalIgnoreCase)) is not null)
-                continue;
-            // Add IP address to the end of the array
-            bans = [.. bans, ip];
-            hasSuccess = true;
+            Bans.IpAddresses = array;
+            Save(Bans);
         }
-        Save(Bans);
-        Bans.IpAddresses = bans;
         return hasSuccess;
     }
 
     public bool RemoveBannedUsernames(params string[] usernames)
     {
         Bans ??= new BanList();
-        var bans = Bans.Usernames;
-        var hasSuccess = false;
-        foreach (var username in usernames)
+        var array = Bans.IpAddresses;
+        var hasSuccess = ModifyBanList(ref array, usernames, false);
+        if (hasSuccess)
         {
-            var index = Array.IndexOf(bans, username);
-            if (index == -1)
-                continue;
-            // Remove username from the array
-            bans = bans.Where((_, i) => i != index).ToArray();
-            hasSuccess = true;
+            Bans.IpAddresses = array;
+            Save(Bans);
         }
-        Save(Bans);
-        Bans.Usernames = bans;
         return hasSuccess;
     }
 
     public bool RemoveBannedIpAddresses(params string[] ipAddresses)
     {
         Bans ??= new BanList();
-        var bans = Bans.IpAddresses;
-        var hasSuccess = false;
-        foreach (var ip in ipAddresses)
+        var array = Bans.IpAddresses;
+        var hasSuccess = ModifyBanList(ref array, ipAddresses, false);
+        if (hasSuccess)
         {
-            var index = Array.IndexOf(bans, ip);
-            if (index == -1)
-                continue;
-            // Remove IP address from the array
-            bans = bans.Where((_, i) => i != index).ToArray();
-            hasSuccess = true;
+            Bans.IpAddresses = array;
+            Save(Bans);
         }
-        Save(Bans);
-        Bans.IpAddresses = bans;
+        return hasSuccess;
+    }
+
+    private bool ModifyBanList(ref string[] banList, string[] items, bool add)
+    {
+        var hasSuccess = false;
+        foreach (var item in items)
+        {
+            var index = Array.IndexOf(banList, item);
+            if (add)
+            {
+                // Does not exist in the array
+                if (index == -1)
+                {
+                    banList = [.. banList, item];
+                    hasSuccess = true;
+                }
+            }
+            else
+            {
+                if (index != -1)
+                {
+                    banList = banList.Where((_, i) => i != index).ToArray();
+                    hasSuccess = true;
+                }
+            }
+        }
         return hasSuccess;
     }
 }

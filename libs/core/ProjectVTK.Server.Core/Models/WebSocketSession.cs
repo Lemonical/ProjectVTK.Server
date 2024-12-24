@@ -5,7 +5,7 @@ using ProjectVTK.Shared.Models.Interfaces;
 
 namespace ProjectVTK.Server.Core.Models;
 
-public record WebSocketSession(IWebSocketConnection Socket)
+public record WebSocketSession(IWebSocketConnection Socket, string IpAddress)
 {
     public Guid Id { get; set; }
 
@@ -15,7 +15,7 @@ public record WebSocketSession(IWebSocketConnection Socket)
 
     public ICharacter? Character { get; set; } = null;
 
-    public string IpAddress => Socket.ConnectionInfo.ClientIpAddress;
+    public bool HasResolved => !string.IsNullOrWhiteSpace(Username) && Id != default;
 
     public void Close()
         => Socket.Close();

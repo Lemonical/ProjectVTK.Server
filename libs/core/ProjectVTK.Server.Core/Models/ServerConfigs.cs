@@ -11,7 +11,8 @@ public record ServerConfigs
 public record NetworkSettings
 {
     public int Port { get; set; } = 27015;
-    public uint MaxUsers { get; set; } = 69;
+    public ushort MaxUsers { get; set; } = 69;
+    public bool IsPublic { get; set; } = true;
 }
 
 public record ServerMetadata
