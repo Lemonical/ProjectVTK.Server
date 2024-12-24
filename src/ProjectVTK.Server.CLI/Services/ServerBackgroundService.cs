@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using ProjectVTK.Server.Core.Services;
 using ProjectVTK.Shared.Commands;
+using ProjectVTK.Shared.Helpers;
 
 namespace ProjectVTK.Server.CLI.Services;
 
@@ -131,7 +132,7 @@ public class ServerBackgroundService(ServerSessions sessions, ServerService serv
                     PrintToConsole($"Usage: login [username] [password]", ConsoleColor.DarkBlue);
                     break;
                 }
-                var loginResponse = await _serverService.LoginAccountAsync(args[1], args[2]);
+                var loginResponse = await _serverService.LoginAccountAsync(args[1], StringHelper.Hash(args[2]));
                 if (loginResponse is not Command loginResponseCmd) break;
                 if (loginResponseCmd.Status.GetValueOrDefault() == CommandStatusCode.Failed)
                     PrintToConsole($"Failed to login: {loginResponseCmd.ErrorMessage}", ConsoleColor.Red);

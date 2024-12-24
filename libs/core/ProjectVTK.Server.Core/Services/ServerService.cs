@@ -168,26 +168,26 @@ public class ServerService(CommandHandlerFactory handlerFactory, CommandService 
         exitEvent.WaitOne();
     }
 
-    public async Task<Command?> LoginAccountAsync(string username, string password)
+    public async Task<Command?> LoginAccountAsync(string username, string hashedPassword)
     {
         if (!IsConnected || !IsCompatibleVersion) return null;
-
-        if (_credentials == null)
-        {
-            password = StringHelper.Hash(password);
-            //var secureString = new SecureString();
-            //foreach (var pass in hashedPassword)
-            //    secureString.AppendChar(pass);
-            _credentials = new(username, password);
-        }
 
         var response = await _commands.SendCommandAsync(_client!,
             Command.CreateRequest(
                 new LoginCommandData()
-                { Username = username, Password = password }
+                { Username = username, Password = hashedPassword }
             ));
         if (response.Status == CommandStatusCode.Success)
+        {
             IsLoggedIn = true;
+            if (_credentials == null || _credentials.UserName != username && _credentials.Password != hashedPassword)
+            {
+                //var secureString = new SecureString();
+                //foreach (var pass in hashedPassword)
+                //    secureString.AppendChar(pass);
+                _credentials = new(username, hashedPassword);
+            }
+        }
 
         return response;
     }
