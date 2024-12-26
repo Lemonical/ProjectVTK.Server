@@ -97,7 +97,7 @@ public class ServerService(CommandHandlerFactory handlerFactory, CommandService 
                     }).AsJson());
                 }
                 else
-            {
+                {
                     _logger.LogWarning("[{ip}] failed to authenticate. Disconnecting...", session.IpAddress);
                     socket.Close();
                 }
